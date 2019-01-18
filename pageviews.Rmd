@@ -351,7 +351,7 @@ Use the Las Vegas shooting of 2017 and the Florida high school shooting of early
 1. Create a graph of views of the Gun control article on wikipedia over a several year period, like we did for Influenza.  
 2. Create a table showing the highest days for viewing the Gun control article.  
 3. Look at top_articles the next day after the Vegas and Florida shootings to see if people are searching for information about those events. Create two tables using datatable() of the top articles for those two days.  
-4. Compare Vegas & Florida shootings 1 week before and 2 weeks after the shootings with a ggplot.  
+4. Compare Wikipedia views of the Gun control article 1 week before and 2 weeks after the Vegas & Florida shootings with a ggplot.  
 5. Publish the results to rpubs.com, and make sure you annotate the document to explain what you did.
 
 
