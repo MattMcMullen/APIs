@@ -1,0 +1,298 @@
+---
+title: "Google trends"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(DT)
+library(gtrendsR)                # Package to access google search data
+library(lubridate)               # Handles dates and times
+```
+
+
+
+The theory is that what people search for reveals their interests in a way that might be more honest than a survey.  
+
+There is a friendly web interface to google trends here: https://trends.google.com/
+
+To start, let's see how people search for the word "flu" with gtrends(), and and then glimpse() it.
+
+
+```{r}
+flu <- gtrends("flu")
+
+glimpse(flu)
+```
+
+flu is a list of multiple data frames, including things like 'interest_over_time' and 'interest_by_region'. Use the dollar sign to refer to individual data frames within 'flu', like flu$interest_over_time. Put that into a chunk below and pipe it to datatable().
+
+```{r}
+flu$interest_over_time %>% 
+  datatable()
+
+```
+
+
+graph it
+```{r}
+flu$interest_over_time %>% 
+  ggplot(aes(x = date, y = hits)) +
+  geom_line()
+```
+
+To improve the graph, use theme_minimal and include a title:
+
+
+
+
+
+
+
+
+
+We might want to look at repeating seasonsal trends, collapsing across different years. Here's how to do that: 
+
+1. Create a new variable by extracting the month from the date variable with the lubridate package's month() function.  
+2. Use group_by() on the new month variable to collect the months together.  
+3. Get the mean number of search hits for each month.  
+
+In addition, I used a datatable with a pageLength option set to 12, and formatRound() to round the 2nd column to 2 digits.
+
+```{r}
+flu$interest_over_time %>% 
+  mutate(month = month(date)) %>%         # Create a new variable called month
+  group_by(month) %>%                     # Combine the months across different weeks and years
+  summarize(hits_per_month = mean(hits)) %>%         # Get average number of searches per month
+  datatable(options = list(pageLength = 12)) %>% 
+  formatRound(2, 2)
+
+```
+
+
+Instead of sending that to a table, we can send it to a graph. We use x = month and y = hits_per_month. The last line scale_x_discrete(limits = c(1:12)) isn't necessary, but it ensures that the number for every month shows on the x-axis.
+
+```{r}
+flu$interest_over_time %>% 
+  mutate(month = month(date)) %>%            # Create a new variable called month
+  group_by(month) %>%                        # Combine months across weeks and years
+  summarize(hits_per_month = mean(hits)) %>%      # Average number of searches for each month
+  ggplot(aes(x = month, y = hits_per_month)) +    # graph it
+  geom_line() +
+  scale_x_discrete(limits = c(1:12))
+
+```
+
+
+
+### Locations
+
+Limit to US, and over a specific time period.
+
+```{r}
+flu_US <- gtrends("flu",  geo = "US", time = "2015-06-01 2018-06-01")
+```
+
+
+
+
+
+Now we can look at different regions within the US. Regions are states.
+
+```{r}
+flu_US$interest_by_region %>% 
+  datatable()
+
+```
+
+
+
+DMA stands for Designated Market Area, and roughly corresponds to cities or cities that are close together and represent a single television market. Pipe flu_US$interest_by_dma into datatable() in a chunk below:
+
+
+
+
+
+
+
+
+
+
+
+Flu season in Australia occurs at a different time from the US, so it might be interesting to compare search rates. In geo, you can put both "US" and "AU" inside the parentheses of c().
+
+```{r}
+flu_countries <- gtrends("flu", geo = c("US", "AU"), time = "2015-01-01 2018-01-01")
+```
+
+Create another ggplot line graph, but this time add color = geo, which will show different colored lines for the US and Australia.
+
+Pipe flu_countries$interest_over_time to a ggplot, with x = date, y = hits, color = geo. Make it a line graph. Do that below:
+
+
+
+
+
+
+
+
+
+
+
+
+
+To summarize by month like we did before, just add geo to month inside group_by(), and then add color = geo inside ggplot(aes()).
+
+```{r}
+flu_countries$interest_over_time %>% 
+  mutate(month = month(date)) %>%          
+  group_by(month, geo) %>%                              
+  summarize(hits_per_month = mean(hits)) %>%           
+  ggplot(aes(x = month, y = hits_per_month, color = geo)) +       
+  geom_line() +
+  scale_x_discrete(limits = c(1:12)) +
+  theme_minimal() +
+  labs(title = "Internet searches for 'flu' over time, by country")
+
+```
+
+
+
+
+
+### Multiple keywords
+
+We can also search for multiple keywords. Since some people think depression is seasonal, let's compare flu and depression.
+
+```{r}
+flu_depression <- gtrends(c("flu", "depression"), geo = "US")
+```
+
+
+Graph it as above with a line graph, but this time use color = keyword to have different colored lines for the two search terms. Pipe flu_depression$interest_over_time to ggplot, with x = date, y = hits, color = keyword.
+
+
+
+
+
+
+
+
+
+Now graph it by month, as above for AU and US. Start with flu_depression$interest_over_time, and then use the model for AU vs. US above, but to see the different keyword plots, use group_by(month, keyword), and use color = keyword in the ggplot. Select an appropriate title.
+
+
+
+
+
+
+
+
+
+
+
+
+### Detour: A problem with gtrends and how to handle it
+
+Here's a problem with gtrends. Look at the searches for "flu" compared to "transient ischemic attack," which is a type of stroke and is very important but has an obscure name. Look how weird the graph looks. The problem is that, because of the low search frequency for "transient ischemic attack," the x-axis contains "<1" which is not seen by R as a number.
+
+```{r}
+
+flu_and_tia <- gtrends(c("flu","transient ischemic attack"), time = "2017-01-01 2017-12-31")
+
+flu_and_tia$interest_over_time %>% 
+  ggplot(aes(x = date, y = hits, color = keyword)) +
+  geom_line()
+
+
+```
+
+Take a closer look by showing the numbers themselves. You can see all the <1 values, and all the numbers are in quotes, which means they are treated like letters rather than numbers. That's what messed up the graph.
+```{r}
+flu_and_tia$interest_over_time$hits
+
+```
+
+
+For comparison, here's what the search volume looks like for flu: They're all numbers as they should be, because there was no time period where the number of searches was low enough to be coded as <1.
+```{r}
+flu$interest_over_time$hits
+```
+
+
+To solve this problem, try as.numeric() on hits to convert the values to numbers. But that doesn't work, it just converts <1 to NA. See:
+```{r}
+flu_and_tia$interest_over_time$hits %>% 
+  as.numeric()
+
+```
+
+It's a little convoluted, but here is a solution: Use recode() to change "<1" to "0" and then convert to numbers with as.numeric(). 
+```{r}
+
+flu_and_tia$interest_over_time$hits %>% 
+  recode("<1" = "0") %>% 
+  as.numeric()
+
+```
+
+Create new hits2 based on recoded original.
+```{r}
+flu_and_tia$interest_over_time$hits %>% 
+  recode("<1" = "0") %>% 
+  as.numeric() ->
+  flu_and_tia$interest_over_time$hits2
+```
+
+And here is the graph after it has been corrected. It uses hits2 rather than hits.
+```{r}
+flu_and_tia$interest_over_time %>% 
+  ggplot(aes(x = date, y = hits2, color = keyword)) +
+  geom_line()
+```
+
+
+
+
+### Searching specific google properties
+
+You can specify a particular google site to look at with gprop =. Valid options are "web" (default), "news", "images", "froogle", and "youtube".
+
+```{r}
+depression_videos <- gtrends("how to treat depression", gprop = "youtube")
+```
+
+
+
+Graph searches by month:
+
+```{r}
+depression_videos$interest_over_time %>% 
+  mutate(month = month(date)) %>%          
+  group_by(month, geo) %>%                              
+  summarize(hits_per_month = mean(hits)) %>%           
+  ggplot(aes(x = month, y = hits_per_month)) +       
+  geom_line() +
+  scale_x_discrete(limits = c(1:12)) +
+  theme_minimal() +
+  labs(title = "Youtube searches for 'how to treat depression' by month")
+
+```
+
+
+
+
+
+
+
+
+
+Assignment: Look up "psychologist" with gtrends.
+
+1. Create a graph of interest in it over time.
+2. Create a graph of monthly interest in it.
+3. Create a datatable of interest by DMA.
+4. Compare US vs. Canadian (CA) interest in psychologist by month, and create a line graph.
+4. Compare interest in psychologist to psychiatrist over time, and create a line graph.  
+5. Compare interest in psychologist to psychiatrist in google images over time, and create a line graph.  
+6. Annotate the document and publish it to rpubs.com.

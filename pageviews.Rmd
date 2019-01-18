@@ -1,0 +1,358 @@
+---
+title: "Wikipedia API"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(pageviews)        # This package gets data on Wikipedia viewing
+library(DT)               # DT stands for datatable, and creates interactive tables
+```
+
+top_articles() from the pageviews package finds the most-read articles on the English-language wikipedia page. By default it gives Oct. 1 2015.
+```{r}
+top_articles()
+```
+
+You can put a start date in the parentheses using as.Date() to find the top articles for a specific date. I'll randomly pick August 13, 2016.
+```{r}
+top_articles(start = as.Date("2016-8-13"))
+```
+
+
+It's good practice when you get data from the internet like this to save the data first so you can manipulate it, rather than hitting their internet server over and over. Let's save the top articles as 'top.' The little arrow <- is a 'less than' sign followed by a dash. A shortcut to make it in R Studio is alt- (the alt key and the dash key at the same time) or option-, and you need to be in a code chunk for that to work. 
+
+This will take all the data from the top_articles() command and put it into a data frame called top:
+
+```{r}
+top <- top_articles(start = as.Date("2016-8-13"))
+```
+
+Nothing will appear on screen after you run the code above, because all you're doing is saving it into 'top.'
+
+
+There are a lot of extra columns in there that we don't need, like language and granularity. Let's select just the ones we want.
+```{r}
+top %>%
+  select(article, views)
+```
+
+Notice that there are some weird articles in there: Main_Page and Special:Search. Let's get rid of those. The ! is a NOT, so this will keep the articles that are not Main_Page and not Special:Search. 
+```{r}
+top %>% 
+  select(article, views) %>%
+  filter(!article == "Main_Page", !article == "Special:Search")
+
+```
+
+
+### datatable() from the DT package
+
+The command datatable() comes from the DT package. It creates more flexible tables that work well when you publish on the web.  
+
+Copy-paste the above chunk, but put in a new line at the end with datatable(), and don't forget the pipe on the previous line. See the difference you get in the table.  
+
+
+
+
+
+
+
+
+
+
+
+There are many customizations you can do on datatable(). See the package website for more details: https://rstudio.github.io/DT/
+
+Here's one small example: cell-border stripe.  Copy-paste the chunk above and then in the parenteses of datatable() put class = "cell-border stripe".
+
+
+
+
+
+
+
+
+
+Adding a formatStyle() line allows more changes. Here's an example that takes the article column and changes its color:
+
+```{r}
+top %>% 
+  select(article, views) %>%
+  filter(!article == "Main_Page", !article == "Special:Search") %>% 
+  datatable(class = 'cell-border stripe') %>% 
+  formatStyle("article", backgroundColor = "lightgoldenrodyellow")
+
+```
+
+
+Now copy-paste the above code, keep the articles column its color, but add another formatStyle line, this one changing the "views" column to another color of your choice. Here's one source that has a list of the color names possible: https://www.rapidtables.com/web/css/css-color.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Graphing the data
+
+To narrow it down from almost a thousand rows to just the top 10, run the following code:
+
+```{r}
+top %>% 
+  select(article, views) %>%
+  filter(!article == "Main_Page", !article == "Special:Search") %>% 
+  top_n(10, views)
+
+```
+
+You can graph it by piping the above chunk into a ggplot(), like this:
+
+```{r}
+top %>% 
+  select(article, views) %>%
+  filter(!article == "Main_Page", !article == "Special:Search") %>% 
+  top_n(10, views) %>% 
+  ggplot(aes(x = article, y = views)) +
+  geom_col()
+```
+
+That's ugly. Let's fix it so it looks better. Copy-paste the above chunk and then:    
+1. use as_factor() to put the bars in order. Replace 'ggplot(aes(x = article, y = views)) +' with 'ggplot(aes(x = as_factor(article), y = views)) +'   
+2. flip the x and y axes with coord_flip(). Put a + at the end of the last line and then on the next line put 'coord_flip()'.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Now, 1. let's make the numbers normal. Add a line: scale_y_continuous(labels = scales::comma),  
+2. reverse the order to put the longest bars at the top. Change 'as_factor(article)' to 'fct_rev(as_factor(article))'. Be careful that your parentheses open and close correctly.    
+3. add some color. Change geom_col() to geom_col(fill = "blue"), or try another color.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+Now finish it by adding the following line:
+
+labs(y = "Number of Views", x = "Article", title = "Top Wikipedia articles, Aug. 13, 2016")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Article views over a time period
+
+See how often an article was accessed during a specific time period. Go to Wikipedia first to be sure you have the correct spelling and format of the article title. You can use R's as.Date() to put in a date of this form: "2015-7-1", which is the earliest it seems to go back.
+
+I want to find the number of pageviews for flu over several years. Going to Wikipedia, the article name is *Influenza*. Here's how to get the data, call it flu, and then use glimpse() to get an overview of the data:
+
+```{r}
+flu <- article_pageviews(article = "Influenza", start = as.Date("2015-7-1"), end = as.Date("2018-7-1"))
+
+glimpse(flu)
+```
+
+
+
+This uses ggplot to make a line graph:
+
+```{r}
+flu %>% 
+  ggplot(aes(x = date, y = views)) +
+  geom_line()
+```
+
+
+Modify the graph above by 
+1. Put color = "red" inside the parentheses of geom_line(),
+2. add the following line: labs(x = "Date", y = "Wikipedia Views", title = "Views of Wikipedia's Influenza Article"). Don't forget the + to connect lines.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Notice the big jump in late 2017. We can find the exact date by using arrange() to sort the data. We need to put the minus sign in front of views so the highest number of views is on top.
+```{r}
+flu %>%
+  arrange(-views)
+```
+
+
+
+### Combining data
+
+Now look at another illness. Copy-paste the chunk above where you used article_pageviews to find Influenza searches, but change it so you find Diabetes searches. The Wikipedia article is called "Diabetes mellitus" (it is case sensitive). Call the data 'diabetes' instead of flu.
+
+
+
+
+Now graph it like above.
+
+
+
+
+
+
+
+
+Now we want to combine the two datasets so we can view them together. This uses bind_rows() to stack the flu data on top of the diabetes data. View the data by clicking on it in the Environment tab.
+
+
+```{r}
+illness <- bind_rows(flu, diabetes) 
+
+```
+
+
+
+Now create a plot of illness by piping it to ggplot just as above, but adding color = article inside the parentheses of aes().
+
+
+
+
+
+
+
+
+
+
+
+Views of Influenza are a bit lower overall than Diabetes, but Influenza views are highly seasonal, peaking in the winter flu months every year.
+
+
+
+### Gun control and mass shootings
+
+
+This analysis looks at pageviews of "Gun control" on Wikipedia immediately before and after two mass shootings: One at a high school in Santa Fe TX on May 18, 2018, and another at a bar in California on Nov. 7, 2018.
+
+I counted 7 days back (making the day of the shooting day 0) and then 14 days forward to get the start and end dates. 
+
+```{r}
+texas <- article_pageviews(article = "Gun_control",
+                           start = as.Date("2018-5-11"),
+                           end = as.Date("2018-6-1"))
+
+```
+
+
+The next code chunk does two things:  
+1. It labels each day from 7 days prior to 14 days after. A handy R trick is that the colon will fill in the numbers, so 1:5 creates 1, 2, 3, 4, 5.  
+2. It labels the event Texas so when I compare it to the other shooting I will know which one it is.  
+
+There will be no output from this because it just creates the two new columns in the texas data frame, but look at the data by clicking on it in the Environment tab.
+
+```{r}
+texas <- texas %>% 
+  mutate(day = -7:14) %>% 
+  mutate(event = "Texas")
+
+```
+
+This gets a quick look at a graph of it.
+
+```{r}
+texas %>% 
+  ggplot(aes(x = day, y = views)) +
+  geom_line()
+```
+
+This next code chunk does all of the previous three but in one chunk: It finds views of the Gun control article 7 days before and 14 days after the Nov. 7, 2018 California shooting, creates the new columns with the days and the event, and creates the graph.
+
+```{r}
+california <- article_pageviews(article = "Gun_control",
+                           start = as.Date("2018-10-31"),
+                           end = as.Date("2018-11-21"))
+
+california <- california %>% 
+  mutate(day = -7:14) %>% 
+  mutate(event = "California")
+
+california %>% 
+  ggplot(aes(x = day, y = views)) +
+  geom_line()
+
+```
+
+
+Next, we want to combine them so we can see both graphs in one. The command to use is bind_rows(). It takes the texas data and puts its rows right on top of the rows from the california data.
+
+Then it creates a graph with the minimal theme and proper titles:
+
+```{r}
+shootings <- bind_rows(texas, california)
+
+shootings %>% 
+  ggplot(aes(x = day, y = views, color = event)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Days before/after Shooting", 
+       y = "Wikipedia Views", 
+       color = "Event", 
+       title = "Views of the Wikipedia Gun Control Article before and after Two Mass Shootings")
+```
+
+
+
+
+
+
+Assignment: 
+Use the Las Vegas shooting of 2017 and the Florida high school shooting of early 2018. Look up the dates when those happened, and do the following:
+
+1. Create a graph of views of the Gun control article on wikipedia over a several year period, like we did for Influenza.  
+2. Create a table showing the highest days for viewing the Gun control article.  
+3. Look at top_articles the next day after the Vegas and Florida shootings to see if people are searching for information about those events. Create two tables using datatable() of the top articles for those two days.  
+4. Compare Vegas & Florida shootings 1 week before and 2 weeks after the shootings with a ggplot.  
+5. Publish the results to rpubs.com, and make sure you annotate the document to explain what you did.
+
+
+
