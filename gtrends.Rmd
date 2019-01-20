@@ -16,7 +16,7 @@ The theory is that what people search for reveals their interests in a way that 
 
 There is a friendly web interface to google trends here: https://trends.google.com/
 
-To start, let's see how people search for the word "flu" with gtrends(), and and then glimpse() it.
+To start, let's see how people search for the word "flu" with gtrends(), and then glimpse() it.
 
 
 ```{r}
@@ -269,7 +269,7 @@ Graph searches by month:
 ```{r}
 depression_videos$interest_over_time %>% 
   mutate(month = month(date)) %>%          
-  group_by(month, geo) %>%                              
+  group_by(month) %>%                              
   summarize(hits_per_month = mean(hits)) %>%           
   ggplot(aes(x = month, y = hits_per_month)) +       
   geom_line() +
@@ -293,6 +293,6 @@ Assignment: Look up "psychologist" with gtrends.
 2. Create a graph of monthly interest in it.
 3. Create a datatable of interest by DMA.
 4. Compare US vs. Canadian (CA) interest in psychologist by month, and create a line graph.
-4. Compare interest in psychologist to psychiatrist over time, and create a line graph.  
-5. Compare interest in psychologist to psychiatrist in google images over time, and create a line graph.  
-6. Annotate the document and publish it to rpubs.com.
+5. Compare interest in psychologist to psychiatrist over time, and create a line graph.  
+6. Compare interest in psychologist to psychiatrist in google images over time, and create a line graph.  
+7. Annotate the document and publish it to rpubs.com.
