@@ -8,9 +8,9 @@ Package loading:
 ```{r}
 library(tidyverse)
 library(DT)
-library(plotly)
+library(plotly)               # This package does interactive graphs
 library(rtweet)               # This package accesses Twitter data
-library(lubridate)            # Handles dates and times
+library(lubridate)  
 ```
 
 This notebook introduces rtweet, which is a package that accesses data from twitter. 
@@ -85,7 +85,7 @@ pelosi_tweets <- get_timeline("SpeakerPelosi", n = 10000)
 
 
 
-**How often does Pelosi tweet?**
+### How often does Pelosi tweet?
 
 The variable created_at tells us when the tweet was created. Each observation looks like this: 2018-12-12 12:45:21. It has the date and the time. 
 
@@ -99,7 +99,7 @@ pelosi_tweets %>%
 
 Above, summarize() collects and present the number of tweets each day. If you use summarize() again on those, you can further collect those days together, and get the mean number of tweets per day.
 
-Create a new chunk below, copy-paste the code in the chunk above, and add the following line: summarize(mean(tweets_per_day)). Don't forget the pipe.
+Create a new chunk below, copy-paste the code in the chunk above, and add the following line at the end: summarize(mean(tweets_per_day)). Don't forget the pipe.
 
 
 
@@ -119,18 +119,52 @@ We can also graph the number of tweets per day with the following code:
 pelosi_tweets %>% 
   mutate(day = date(created_at)) %>% 
   ggplot(aes(x = day)) +
-  geom_freqpoly(binwidth = 1)
+  geom_histogram()
 ```
 
 
-Let's clean up the graph a little:  
-1. Add a theme_minimal() line, which takes away the grey background.  
-2. Add this line: labs(y = "Number of tweets", title = "How often Nancy Pelosi tweets")  
+This histogram combines days into "bins," making it difficult to tell how many tweets were created on each day. We can adjust binwidth to 1 for one day, or 7 for a week, for example. Create another histogram below, but in the parentheses of geom_histogram(), put binwidth = and select a size.
 
 
 
 
 
+
+### Graphing with plotly.
+
+Plotly is a graphing package like ggplot2, but it creates interactive graphs that work great when published on the internet.
+
+To create a graph, it starts with plot_ly() rather than ggplot(). There are a few differences between the packages: You don't need aes(), but you must put ~ in front of variables like the x and y variables. I like the fact that it uses the standard %>% to connect lines rather than the + that ggplot uses.
+
+For more information about plotly, see the following:
+
+Book: https://plotly-book.cpsievert.me
+Reference site: https://plot.ly/r/
+
+Here's how you would re-create the histogram from ggplot above in plotly:
+
+```{r}
+pelosi_tweets %>%
+  mutate(day = date(created_at)) %>% 
+  plot_ly(x = ~day) %>%                                        
+  add_histogram()
+```
+
+
+Notice that you can hover over the graph to get more information, and you can play with the tools to show lines, zoom in and out, etc.
+
+
+
+Copy-paste the code above and then add the following line to create a title: layout(title = "Number of tweets from @SpeakerPelosi")
+
+
+```{r}
+pelosi_tweets %>%
+  mutate(day = date(created_at)) %>% 
+  plot_ly(x = ~day) %>%                                        
+  add_histogram() %>% 
+  layout(title = "Number of tweets from @SpeakerPelosi")
+```
 
 
 
@@ -141,7 +175,7 @@ Let's clean up the graph a little:
 
 ## Time of day of tweets
 
-The hour() function from the lubridate package can extracts the hour of the day from a date variable such as created_at. Set pageLength to 24 in datatable - it doesn't look right in RStudio, but it will when published on a web page.
+The hour() function from the lubridate package extracts the hour of the day from a date variable such as created_at. Set pageLength to 24 in datatable - it doesn't look right in RStudio, but it will when published on a web page.
 
 ```{r}
 pelosi_tweets %>% 
@@ -157,7 +191,7 @@ tz(pelosi_tweets$created_at)
 
 ```
 
-This tells us that the time zone the tweet is in is UTC, Coordinated Universal Time, which is the time in London. That's not the time zone Pelosi was in, it's the time zone all tweets all over the world are given. No matter what time it is in your local time zone, the time provided by rtweet is in UTC time.
+This tells us that the time zone the tweet is in is UTC, Universal Coordinated Time, which is the time in London. That's not the time zone Pelosi was in, it's the time zone all tweets all over the world are given. No matter what time it is in your local time zone, the time provided by rtweet is in UTC time.
 
 Pelosi is probably tweeting from Washington DC, which is in the Eastern time zone, called "America/New_York" (see here for a complete listing: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). She is from California, and so some of her tweets may be from there or elsewhere where she is not in DC, but let's assume for simplicity that she is always tweeting from the Eastern time zone.
 
@@ -182,13 +216,13 @@ pelosi_tweets %>%
   mutate(time = with_tz(created_at, "America/New_york")) %>%    # convert to Eastern time zone
   mutate(time = hour(time)) %>%                                 # extract the hour
   plot_ly(x = ~time) %>%                                        # create plotly graph
-  add_histogram() %>%                                            # make histogram
+  add_histogram()                                               # make histogram
 
 ```
 
 To complete the graph above, add the following line:
 
-layout(title = "When Does Pelosi Tweet?", 
+layout(title = "When Does @SpeakerPelosi Tweet?", 
          xaxis = list(title = "Time of Day (0 = midnight)"),
          yaxis = list(title = "Number of Tweets"))
 
@@ -252,7 +286,7 @@ Assignment:
 1. Get Trump's tweets (realDonaldTrump) using get_timeline(). (You won't need to use search_tweets() for this assignment.)   
 2. Find which hashtags he uses most and make a table.  
 3. Make a table of the number of tweets each day, and find the overall average number of tweets per day.  
-4. Create a ggplot graphic of the number of tweets per day.  
+4. Create a plotly graphic of the number of tweets per day.  
 5. Create a table and a plotly histogram of the hour of the day that Trump tweets.  
 6. Create a table and a plotly histogram of the week days that Trump tweets.  
 7. Create a plotly heatmap of the weekday and time of day that Trump tweets.  
