@@ -25,11 +25,11 @@ It is important that you delete the keys and secrets from this code after you us
 
 ```{r}
 token <- create_token(
-  app = "class_twitter_app",
-  consumer_key = "7CPcgdG3BEw8p1MOtCMCCIMJx",
-  consumer_secret = "xX4kvoLxI45IPpq2SxKhwhwtN8nbUwGM5D3w4Zf0S4uCjogK0v",
-  access_token = "1016477615849234432-NPelRwghHLlUKOcm0LhpXzPunAWVRK",
-  access_secret = "jziGHz4BKpIjoahSRLrMv4rWmfgIqrz7aaMoyLJJdN3AN")
+  app = "",
+  consumer_key = "",
+  consumer_secret = "",
+  access_token = "",
+  access_secret = "")
 
 get_token()        # this shows the token. make sure key is the same as consumer_key above
 ```
@@ -46,6 +46,9 @@ about_pelosi <- search_tweets("pelosi", n = 10000, include_rts = F)
 
 Create a chunk below with glimpse(about_pelosi). Take a moment and look at the data. For each tweet, there is a variety of information, like the *text* of the tweet, the *screen_name* of the person who created the tweet, the time and date it was *created_at*, any *hashtags* used, etc.
 
+```{r}
+glimpse(about_pelosi)
+```
 
 
 
@@ -110,7 +113,6 @@ Create a new chunk below, copy-paste the code in the chunk above, and add the fo
 
 
 
-
 The above should show how many times per day Pelosi tweets.
 
 We can also graph the number of tweets per day with the following code:
@@ -158,13 +160,6 @@ Notice that you can hover over the graph to get more information, and you can pl
 Copy-paste the code above and then add the following line to create a title: layout(title = "Number of tweets from @SpeakerPelosi")
 
 
-```{r}
-pelosi_tweets %>%
-  mutate(day = date(created_at)) %>% 
-  plot_ly(x = ~day) %>%                                        
-  add_histogram() %>% 
-  layout(title = "Number of tweets from @SpeakerPelosi")
-```
 
 
 
@@ -173,7 +168,8 @@ pelosi_tweets %>%
 
 
 
-## Time of day of tweets
+
+### Time of day of tweets
 
 The hour() function from the lubridate package extracts the hour of the day from a date variable such as created_at. Set pageLength to 24 in datatable - it doesn't look right in RStudio, but it will when published on a web page.
 
@@ -193,13 +189,13 @@ tz(pelosi_tweets$created_at)
 
 This tells us that the time zone the tweet is in is UTC, Universal Coordinated Time, which is the time in London. That's not the time zone Pelosi was in, it's the time zone all tweets all over the world are given. No matter what time it is in your local time zone, the time provided by rtweet is in UTC time.
 
-Pelosi is probably tweeting from Washington DC, which is in the Eastern time zone, called "America/New_York" (see here for a complete listing: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). She is from California, and so some of her tweets may be from there or elsewhere where she is not in DC, but let's assume for simplicity that she is always tweeting from the Eastern time zone.
+Pelosi is probably tweeting from Washington DC, which is in the Eastern time zone, called "America/New_York" (see here for a complete listing: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones ). She is from California, and so some of her tweets may be from there or elsewhere where she is not in DC, but let's assume for simplicity that she is always tweeting from the Eastern time zone.
 
 We can convert the time to a new time zone using with_tz(time, "time_zone"), where "time_zone" is the new time zone.
 
 ```{r}
 pelosi_tweets %>% 
-  mutate(time = with_tz(created_at, "America/New_york")) %>% 
+  mutate(time = with_tz(created_at, "America/New_York")) %>% 
   mutate(time = hour(time)) %>% 
   count(time) %>% 
   datatable(options = (list(pageLength = 24)), rownames = F)
@@ -213,7 +209,7 @@ Let's use plotly to create a histogram of the number of tweets at each hour of t
 
 ```{r}
 pelosi_tweets %>% 
-  mutate(time = with_tz(created_at, "America/New_york")) %>%    # convert to Eastern time zone
+  mutate(time = with_tz(created_at, "America/New_York")) %>%    # convert to Eastern time zone
   mutate(time = hour(time)) %>%                                 # extract the hour
   plot_ly(x = ~time) %>%                                        # create plotly graph
   add_histogram()                                               # make histogram
@@ -261,12 +257,15 @@ Using the code above as a starting point, create a histogram with plotly of the 
 
 
 
+
+### Heat map
+
 Let's finish with a really cool graph called a heatmap. The following will combine days of the week and hours of the day, and show how often the tweets occur.
 
 ```{r}
 pelosi_tweets %>% 
   mutate(day = wday(created_at, label = T)) %>% 
-  mutate(hour = hour(with_tz(created_at, "America/New_york"))) %>% 
+  mutate(hour = hour(with_tz(created_at, "America/New_York"))) %>% 
   plot_ly(x = ~day, y = ~hour) %>% 
   add_histogram2d(nbinsx = 7, nbinsy = 24)
 
@@ -291,20 +290,6 @@ Assignment:
 6. Create a table and a plotly histogram of the week days that Trump tweets.  
 7. Create a plotly heatmap of the weekday and time of day that Trump tweets.  
 8. Annotate the analysis and publish to rpubs.com.  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
